@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Management Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.min.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+
+    <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+      <div class="sidebar-brand">
+        <span class="brand-logo" aria-hidden="true">
+          <i data-lucide="graduation-cap"></i>
+        </span>
+        <div class="brand-text">
+          <strong>StudentHub</strong>
+          <small>Student Management System</small>
+        </div>
+        <button class="btn-icon sidebar-close" id="sidebarClose" aria-label="Close navigation">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <span class="nav-group">Menu</span>
+        <button class="nav-item active" data-view="dashboard" type="button">
+          <i data-lucide="layout-dashboard"></i><span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-view="students" type="button">
+          <i data-lucide="users"></i><span>All Students</span>
+          <span class="nav-count" id="navCount">0</span>
+        </button>
+        <button class="nav-item" id="navAddBtn" type="button">
+          <i data-lucide="user-plus"></i><span>Add Student</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="api-chip" id="apiStatus">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="apiStatusText">Checking API…</span>
+        </div>
+        <span class="version-label">StudentHub v1.0.0</span>
+      </div>
+    </aside>
+
+    <div class="sidebar-scrim" id="sidebarScrim"></div>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="btn-icon menu-toggle" id="menuToggle" aria-label="Open navigation">
+          <i data-lucide="menu"></i>
+        </button>
+        <div class="topbar-title">
+          <h1 class="page-title" id="pageTitle">Dashboard</h1>
+          <p class="breadcrumb" id="breadcrumb">StudentHub · Overview</p>
+        </div>
+        <div class="topbar-actions">
+          <span class="app-chip"><i data-lucide="shield-check"></i> v1.0.0</span>
+          <button class="btn btn-primary" id="addStudentBtn" type="button">
+            <i data-lucide="user-plus"></i> Add Student
+          </button>
+        </div>
+      </header>
+
+      <main class="content">
+
+        <!-- Dashboard view -->
+        <section class="view" id="view-dashboard">
+          <div class="stat-grid" id="statGrid"></div>
+
+          <div class="dash-cols">
+            <div class="card">
+              <div class="card-head">
+                <h2>Recently added students</h2>
+                <button class="btn btn-ghost btn-sm" data-goto="students" type="button" id="recentViewAll">All students</button>
+              </div>
+              <div id="recentWrap" class="recent-wrap"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <h2>Enrolment by course</h2>
+              </div>
+              <div id="courseWrap" class="course-wrap"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Students view -->
+        <section class="view hidden" id="view-students">
+          <div class="toolbar">
+            <div class="search-box">
+              <i data-lucide="search"></i>
+              <label class="sr-only" for="searchInput">Search students by name</label>
+              <input id="searchInput" type="search" placeholder="Search by name…" autocomplete="off">
+              <button class="btn-icon search-clear" id="clearSearch" type="button" aria-label="Clear search">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+            <span class="toolbar-hint">Data is served live from the SQLite database.</span>
+          </div>
+
+          <div class="card table-card">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th><button class="sort-btn" data-sort="name" type="button">Student <i data-lucide="chevrons-up-down"></i></button></th>
+                    <th>Date of birth</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Course</th>
+                    <th class="col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="studentsBody"></tbody>
+              </table>
+            </div>
+
+            <div class="table-footer">
+              <span class="muted" id="rowCount">0 records</span>
+              <span class="error-banner hidden" id="loadError"></span>
+              <div class="pager" id="pager"></div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Student form modal -->
+  <dialog class="modal" id="studentDialog">
+    <form id="studentForm" novalidate>
+      <div class="modal-head">
+        <h2 id="modalTitle">Add Student</h2>
+        <button class="btn-icon" type="button" data-dialog-close="studentDialog" aria-label="Close">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <input type="hidden" id="fieldId">
+      <div class="form-grid">
+        <label class="field">
+          <span>Full name <em>*</em></span>
+          <input id="fieldName" name="name" required maxlength="120" placeholder="e.g. Maya Sharma" autocomplete="off">
+          <small class="error" data-for="name"></small>
+        </label>
+        <label class="field">
+          <span>Date of birth <em>*</em></span>
+          <input id="fieldDob" name="date_of_birth" type="date" required>
+          <small class="error" data-for="date_of_birth"></small>
+        </label>
+        <label class="field">
+          <span>Email <em>*</em></span>
+          <input id="fieldEmail" name="email" type="email" required maxlength="254" placeholder="name@example.com" autocomplete="off">
+          <small class="error" data-for="email"></small>
+        </label>
+        <label class="field">
+          <span>Phone <em>*</em></span>
+          <input id="fieldPhone" name="phone" required maxlength="20" placeholder="e.g. +1-555-0101" autocomplete="off">
+          <small class="error" data-for="phone"></small>
+        </label>
+        <label class="field field-wide">
+          <span>Course <em>*</em></span>
+          <input id="fieldCourse" name="course" required maxlength="120" placeholder="e.g. Computer Science" autocomplete="off">
+          <small class="error" data-for="course"></small>
+        </label>
+      </div>
+      <div class="form-error hidden" id="formError"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" data-dialog-close="studentDialog">Cancel</button>
+        <button class="btn btn-primary" type="submit" id="saveBtn"><i data-lucide="check"></i> Save Student</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Student detail modal -->
+  <dialog class="modal modal-sm" id="detailDialog">
+    <div class="modal-head">
+      <h2>Student details</h2>
+      <button class="btn-icon" type="button" data-dialog-close="detailDialog" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="detail-body">
+      <div class="detail-head">
+        <span class="avatar" id="detailAvatar">–</span>
+        <div>
+          <p class="detail-name" id="detailName">–</p>
+          <p class="detail-meta" id="detailMeta">–</p>
+        </div>
+      </div>
+      <dl class="detail-list">
+        <div><dt>Date of birth</dt><dd id="detailDob">–</dd></div>
+        <div><dt>Email</dt><dd id="detailEmail">–</dd></div>
+        <div><dt>Phone</dt><dd id="detailPhone">–</dd></div>
+        <div><dt>Course</dt><dd id="detailCourse">–</dd></div>
+        <div><dt>Created at</dt><dd id="detailCreated">–</dd></div>
+        <div><dt>Updated at</dt><dd id="detailUpdated">–</dd></div>
+      </dl>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="detailEditBtn" type="button"><i data-lucide="pencil"></i> Edit</button>
+      <button class="btn btn-primary" id="detailCloseBtn" type="button">Close</button>
+    </div>
+  </dialog>
+
+  <!-- Delete confirmation -->
+  <dialog class="modal modal-sm" id="confirmDialog">
+    <div class="modal-head">
+      <h2>Delete student</h2>
+    </div>
+    <div class="confirm-body">
+      <span class="confirm-icon" aria-hidden="true"><i data-lucide="trash-2"></i></span>
+      <p id="confirmText">Delete this student record?</p>
+      <p class="confirm-warn">This action is permanent and cannot be undone.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="confirmCancel" type="button">Cancel</button>
+      <button class="btn btn-danger" id="confirmDelete" type="button"><i data-lucide="trash-2"></i> Delete Student</button>
+    </div>
+  </dialog>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
